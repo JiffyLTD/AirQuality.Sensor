@@ -9,7 +9,6 @@ ESP8266WiFiMulti WiFiMulti;
 #define DHTPIN 2
 DHT dht(DHTPIN, DHT11); //Инициация датчика
 String serverName = "http://192.168.50.170:8080/Home/Post";
-bool isConnected = false;
 
 void setup() {
   Serial.begin(9600);
