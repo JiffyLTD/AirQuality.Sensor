@@ -15,7 +15,7 @@ void setup() {
   Serial.begin(9600);
   
     WiFi.mode(WIFI_STA);
-    WiFiMulti.addAP("JiffyLTD", "goshapuzan2102");
+    WiFiMulti.addAP("-", "-");
     dht.begin();
 }
 
