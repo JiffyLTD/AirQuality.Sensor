@@ -1,7 +1,6 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
 #include "wifi_connect.h"
-#include "certs.h"
 
 #include <DHT.h>
 
@@ -9,18 +8,12 @@
 
 bool wifi_connect = false;
 HTTPClient https;
-// Отпечаток сертификат SSL сайта iocontrol.ru, так же его можно получить из браузера,
-// нажав на пиктограмму замка рядом с полем ввода адреса
 const uint8_t fingerprint[20] = {0xcc, 0x64, 0x74, 0xd1, 0x51, 0x71, 0x56, 0xc6, 0x66, 0xee, 0x53, 0x49, 0x20, 0xcf, 0x37, 0xb1, 0xe6, 0xb6, 0x3a, 0x19};
 
 #define DHTPIN 2
-DHT dht(DHTPIN, DHT11); //Инициация датчика
+DHT dht(DHTPIN, DHT11); 
 
 const String serverPath = "https://192.168.50.170:4430/api/wsd/add";
-
-// интервал в миллисекундах (5 минут)
-const unsigned long interval = 10000;
-unsigned long previousMillis = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -31,16 +24,8 @@ void setup() {
 }
 
 void loop() {
-
-  unsigned long currentMillis = millis();
-
-  if (currentMillis - previousMillis >= interval) {
-
-    previousMillis = currentMillis;
-
     if(wifi_connect == true){
       std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
-      // Ignore SSL certificate validation
       client->setFingerprint(fingerprint);
 
       float t = dht.readTemperature(); 
@@ -63,34 +48,35 @@ void loop() {
           
       https.begin(*client, serverPath.c_str());
       https.addHeader("Content-Type", "application/json");
-      int httpResponseCode = https.POST(jsonToPost);
+      int httpsResponseCode = https.POST(jsonToPost);
           
-      if (httpResponseCode > 0) {
+      if (httpsResponseCode > 0) {
         const String payload = https.getString();
-        printHttpsResponseCode(httpResponseCode, payload);
+        printHttpsResponseCode(httpsResponseCode, payload);
       }
       else {
-        printHttpsError(httpResponseCode);
+        printHttpsError(httpsResponseCode);
       }
           
       https.end();
     }else{
       Serial.print("---WiFi error---");
     }
-  }
+
+    delay(300000);
 }
 
-void printHttpsResponseCode(int httpResponseCode, String payload){
+void printHttpsResponseCode(int httpsResponseCode, String payload){
   Serial.print("---HTTPS Response code: ");
-  Serial.print(httpResponseCode);
+  Serial.print(httpsResponseCode);
   Serial.print(payload);
   Serial.print("---");
 }
 
-void printHttpsError(int httpResponseCode){
+void printHttpsError(int httpsResponseCode){
   Serial.print("---HTTPS ERROR START---");
   Serial.print("Error code: ");
-  Serial.println(httpResponseCode);
-  Serial.printf("[HTTPS] POST... failed, error: %s\n", https.errorToString(httpResponseCode).c_str());
+  Serial.println(httpsResponseCode);
+  Serial.printf("[HTTPS] POST... failed, error: %s\n", https.errorToString(httpsResponseCode).c_str());
   Serial.print("---HTTPS ERROR END---");
 }
