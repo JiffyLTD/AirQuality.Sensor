@@ -1,5 +1,4 @@
-#include "wifi_connect.h"
-
+#include "WifiConnect.h"
 #include <WiFiManager.h>
 
 bool WiFiConnect(){
@@ -7,7 +6,7 @@ bool WiFiConnect(){
 
   bool connectResult;
 
-  connectResult = wm.autoConnect("AirQualitySensor","1111"); // password protected ap
+  connectResult = wm.autoConnect("AirQualitySensor","0000");
 
   if(!connectResult) {
     Serial.println("---Failed to connect---");
