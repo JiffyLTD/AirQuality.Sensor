@@ -1,0 +1,8 @@
+#include <Arduino.h>
+
+const uint8_t fingerprint[20] = {0xcc, 0x64, 0x74, 0xd1, 0x51, 0x71, 0x56, 0xc6, 0x66, 0xee, 0x53, 0x49, 0x20, 0xcf, 0x37, 0xb1, 0xe6, 0xb6, 0x3a, 0x19};
+const String serverPath = "https://192.168.50.170:4430/api/wsd/add";
+
+void SendData(String jsonToPost);
+void printHttpsResponseCode(int httpsResponseCode, String payload);
+void printHttpsError(int httpsResponseCode);
