@@ -10,7 +10,6 @@ bool WiFiConnect(){
 
   if(!connectResult) {
     Serial.println("---Failed to connect---");
-    // ESP.restart();
   } 
   else {    
     Serial.println("---WiFi connected---");
