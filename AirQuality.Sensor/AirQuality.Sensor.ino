@@ -24,15 +24,14 @@ PMS::DATA data;
 int analogMQ7 = A0; 
 
 // BMP180
-#define SCL_PIN_BMP180 12
-#define SDA_PIN_BMP180 13
+#define SCL_PIN_BMP180 1
+#define SDA_PIN_BMP180 5
 
 Adafruit_BMP085 bmp;
 
 // GPS NEO 6M
-#define TX_PIN_GPS 4
-#define RX_PIN_GPS 5
-TinyGPSPlus gps;
+#define TX_PIN_GPS 12
+#define RX_PIN_GPS 13
 SoftwareSerial gpsSerial(RX_PIN_GPS, TX_PIN_GPS);
 
 bool wifiIsConnected = false;
@@ -40,7 +39,7 @@ bool wifiIsConnected = false;
 void setup() {
   Serial.begin(115200);
   pmsSerial.begin(9600);
-  gpsSerial.begin(9600);
+  gpsSerial.begin(4800);
 
   //BMP180
   Wire.begin(SDA_PIN_BMP180, SCL_PIN_BMP180);
@@ -65,14 +64,16 @@ void loop() {
 
       float pressure = bmp.readPressure(); 
 
-      float latitude = gps.location.lat();
-      float longitude = gps.location.lng();
-      float altitude = gps.altitude.meters();
+      String gpsData;
+      if (gpsSerial.available())
+      {
+          gpsData = gpsSerial.read();
+      }
 
-      String jsonToPost = GetJsonData(t, h, pm_1, pm2_5, pm_10, co, pressure, latitude, longitude, altitude);
+      String jsonToPost = GetJsonData(t, h, pm_1, pm2_5, pm_10, co, pressure, gpsData);
 
       if(wifiIsConnected){
-        //SendData(jsonToPost);
+        SendData(jsonToPost);
       } 
 
       delay(60000);
