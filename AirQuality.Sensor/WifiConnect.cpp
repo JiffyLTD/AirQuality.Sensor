@@ -6,14 +6,12 @@ bool WiFiConnect(){
 
   bool connectResult;
 
-  connectResult = wm.autoConnect("AirQualitySensor","0000");
+  connectResult = wm.autoConnect("AirQualitySensor","12345678");
 
   if(!connectResult) {
-    Serial.println("---Failed to connect---");
+    wm.resetSettings();
+    ESP.restart(); 
   } 
-  else {    
-    Serial.println("---WiFi connected---");
-  }
 
   return connectResult;
 }

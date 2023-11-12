@@ -4,5 +4,3 @@ const uint8_t fingerprint[20] = {0xcc, 0x64, 0x74, 0xd1, 0x51, 0x71, 0x56, 0xc6,
 const String serverPath = "https://192.168.50.170:4430/api/wsd/add";
 
 void SendData(String jsonToPost);
-void printHttpsResponseCode(int httpsResponseCode, String payload);
-void printHttpsError(int httpsResponseCode);
