@@ -35,21 +35,37 @@ bool wifiIsConnected = false;
 
 long timing = 0; // точка отсчета таймера
 
-int attemptsLimit = 5; // кол-во попыток считывания данных с PMS7003
+int attemptsLimit = 3; // кол-во попыток считывания данных с PMS7003
 int currentAttempt = 0;
 
-void setup() {
+bool bmpAvailable = false;
+
+void setup() 
+{
   Serial.begin(115200);
   wifiIsConnected = WiFiConnect();
 
   pmsSerial.begin(9600);
   gpsSerial.begin(9600);
-  //Wire.begin(SDA_PIN_BMP180, SCL_PIN_BMP180);
-  //bmp.begin();
   dht.begin();
+
+  initBMP();
 }
 
-void loop() {
+void initBMP() 
+{
+  Wire.begin(SDA_PIN_BMP180, SCL_PIN_BMP180);
+  byte status = Wire.endTransmission();
+
+  if(status == 0)
+  {
+    bmpAvailable = true;
+    bmp.begin();
+  }
+}
+
+void loop() 
+{
   if (millis() - timing > 10000) 
   {
     currentAttempt = 0;
@@ -62,10 +78,16 @@ void loop() {
 
     float* dhtValuesArr = getDHTValues();
     int coValue = getCOValue();
-    //float pressureValue = getPressureValue();
+
+    float pressureValue = -1;
+    if(bmpAvailable)
+    {
+      pressureValue = getPressureValue();
+    }
+
     String gpsData = getGPSData();    
 
-    String jsonToPost = GetJsonData(dhtValuesArr[1], dhtValuesArr[0], pmValuesArr[0], pmValuesArr[1], pmValuesArr[2], coValue, -1, gpsData);
+    String jsonToPost = GetJsonData(dhtValuesArr[1], dhtValuesArr[0], pmValuesArr[0], pmValuesArr[1], pmValuesArr[2], coValue, pressureValue, gpsData);
 
     delete[] pmValuesArr;
     delete[] dhtValuesArr;
@@ -134,8 +156,8 @@ float* getDHTValues()
     {
       float* array = new float[2];
 
-      array[0] = 0; // Влажность 0%
-      array[1] = -273; // Температура -273°C
+      array[0] = -1;
+      array[1] = -273; 
 
       return array;
     }
