@@ -6,14 +6,14 @@
 #include "PMS.h"
 #include <Adafruit_BMP085.h>
 
-//DHT22
-#define DHTPIN 5 //D1                         
+// DHT22
+#define DHTPIN 5 // D1                         
 #define DHTTYPE DHT22   
 DHT dht(DHTPIN, DHTTYPE);
 
 // PMS7003
-#define TX_PIN_PMS7003 14 //D6
-#define RX_PIN_PMS7003 12 //D5
+#define TX_PIN_PMS7003 14 // D6
+#define RX_PIN_PMS7003 12 // D5
 SoftwareSerial pmsSerial(RX_PIN_PMS7003, TX_PIN_PMS7003);// RX, TX
 PMS pms(pmsSerial);
 PMS::DATA data;
@@ -22,36 +22,44 @@ PMS::DATA data;
 int analogMQ7 = A0; 
 
 // BMP180
-#define SCL_PIN_BMP180 4 //D2
-#define SDA_PIN_BMP180 13 //D7
+#define SCL_PIN_BMP180 4 // D2
+#define SDA_PIN_BMP180 13 // D7
 Adafruit_BMP085 bmp;
 
 // GPS NEO 6M
-#define TX_PIN_GPS 3 //D9
-#define RX_PIN_GPS 1 //D10
+#define TX_PIN_GPS 3 // D9
+#define RX_PIN_GPS 1 // D10
 SoftwareSerial gpsSerial(RX_PIN_GPS, TX_PIN_GPS);
 
 bool wifiIsConnected = false;
 
-long timing = 0; // Переменная для хранения точки отсчета
+long timing = 0; // точка отсчета таймера
+
+int attemptsLimit = 5; // кол-во попыток считывания данных с PMS7003
+int currentAttempt = 0;
 
 void setup() {
   Serial.begin(115200);
   wifiIsConnected = WiFiConnect();
+
   pmsSerial.begin(9600);
   gpsSerial.begin(9600);
-
-  //BMP180
   //Wire.begin(SDA_PIN_BMP180, SCL_PIN_BMP180);
   //bmp.begin();
-  //DHT 22
   dht.begin();
 }
 
 void loop() {
   if (millis() - timing > 10000) 
   {
+    currentAttempt = 0;
     float* pmValuesArr = getPMValues();
+    while(pmValuesArr[0] == -1 || currentAttempt <= attemptsLimit)
+    {
+      pmValuesArr = getPMValues();
+      currentAttempt += 1;
+    }
+
     float* dhtValuesArr = getDHTValues();
     int coValue = getCOValue();
     //float pressureValue = getPressureValue();
@@ -72,37 +80,35 @@ void loop() {
 
 float* getPMValues()
 {
-    try
+  try
+  {
+    if(!pms.read(data))
     {
-      if(pms.read(data))
-      {
-        float pm_1 = data.PM_AE_UG_1_0;
-        float pm2_5 = data.PM_AE_UG_2_5;
-        float pm_10 = data.PM_AE_UG_10_0;
-
-        float* array = new float[3];
-
-        array[0] = pm_1;
-        array[1] = pm2_5;
-        array[2] = pm_10;
-
-        return array;
-      }
-      else
-      {
-        throw "No pms data";
-      }
+      throw "No pms data";
     }
-    catch (...)
-    {
-      float* array = new float[3];
+    
+    float pm_1 = data.PM_AE_UG_1_0;
+    float pm2_5 = data.PM_AE_UG_2_5;
+    float pm_10 = data.PM_AE_UG_10_0;
 
-        array[0] = -1;
-        array[1] = -1;
-        array[2] = -1;
+    float* array = new float[3];
 
-        return array;
-    }
+    array[0] = pm_1;
+    array[1] = pm2_5;
+    array[2] = pm_10;
+
+    return array;
+  }
+  catch (...)
+  {
+    float* array = new float[3];
+
+      array[0] = -1;
+      array[1] = -1;
+      array[2] = -1;
+
+      return array;
+  }
 }
 
 float* getDHTValues()
