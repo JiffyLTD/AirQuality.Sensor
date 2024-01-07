@@ -38,8 +38,6 @@ long timing = 0; // точка отсчета таймера
 int attemptsLimit = 3; // кол-во попыток считывания данных с PMS7003
 int currentAttempt = 0;
 
-bool bmpAvailable = false;
-
 void setup() 
 {
   Serial.begin(115200);
@@ -49,24 +47,13 @@ void setup()
   gpsSerial.begin(9600);
   dht.begin();
 
-  initBMP();
-}
-
-void initBMP() 
-{
   Wire.begin(SDA_PIN_BMP180, SCL_PIN_BMP180);
-  byte status = Wire.endTransmission();
-
-  if(status == 0)
-  {
-    bmpAvailable = true;
-    bmp.begin();
-  }
+  bmp.begin();
 }
 
 void loop() 
 {
-  if (millis() - timing > 10000) 
+  if (millis() - timing > 60000) 
   {
     currentAttempt = 0;
     float* pmValuesArr = getPMValues();
@@ -79,11 +66,7 @@ void loop()
     float* dhtValuesArr = getDHTValues();
     int coValue = getCOValue();
 
-    float pressureValue = -1;
-    if(bmpAvailable)
-    {
-      pressureValue = getPressureValue();
-    }
+    float pressureValue = getPressureValue();
 
     String gpsData = getGPSData();    
 
@@ -148,7 +131,11 @@ float* getDHTValues()
       float* array = new float[2];
 
       array[0] = h;
-      array[1] = t;
+
+      if(t > 0)
+        array[1] = t;
+      else
+        array[1] = (t + 3276.6) * -1; // из за кривой библиотеки приходится высчитывать отрицательные значения
 
       return array;
     }
