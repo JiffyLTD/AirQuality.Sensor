@@ -194,24 +194,14 @@ String getGPSData()
     {
       if (gpsSerial.available() > 0)
       {
-        String data = "";
         String gpsData = "";
         String line = "";
 
-        while(!line.startsWith("$GPRMC")){
+        while(!line.startsWith("$GPGGA")){
           line = gpsSerial.readStringUntil('\n');
         }
 
-        if(line.startsWith("$GPRMC")){
-          gpsData += line;
-
-          for(int i = 0; i <= 5; i++)
-          {
-            data = gpsSerial.readStringUntil('\n');
-
-            gpsData += data;
-          } 
-        }
+        gpsData += line;
 
         return gpsData;
       }
