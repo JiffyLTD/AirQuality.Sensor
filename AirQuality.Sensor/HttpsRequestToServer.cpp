@@ -10,6 +10,7 @@ void SendData(String jsonToPost){
 
   if(https.begin(*client, serverPath.c_str())){
     https.addHeader("Content-Type", "application/json");
+    https.addHeader("Authorization", token);
 
     https.POST(jsonToPost);        
             
