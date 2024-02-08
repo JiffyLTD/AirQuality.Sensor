@@ -9,8 +9,8 @@ void SendData(String jsonToPost){
   client->setFingerprint(fingerprint);
 
   if(https.begin(*client, serverPath.c_str())){
-    https.addHeader("Content-Type", "application/json");
-    https.addHeader("Authorization", token);
+    https.addHeader(F("Content-Type"), F("application/json"));
+    https.addHeader(F("Authorization"), token);
 
     https.POST(jsonToPost);        
             

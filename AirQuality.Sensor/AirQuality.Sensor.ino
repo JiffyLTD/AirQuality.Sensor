@@ -19,7 +19,7 @@ PMS pms(pmsSerial);
 PMS::DATA data;
 
 // MQ-7
-int analogMQ7 = A0; 
+#define ANALOG_MQ7_PIN A0
 
 // BMP180
 #define SCL_PIN_BMP180 4 // D2
@@ -33,10 +33,10 @@ SoftwareSerial gpsSerial(RX_PIN_GPS, TX_PIN_GPS);
 
 bool wifiIsConnected = false;
 
-long timing = 0; // точка отсчета таймера
+int32_t timing = 0; // точка отсчета таймера
 
-int attemptsLimit = 3; // кол-во попыток считывания данных с PMS7003
-int currentAttempt = 0;
+const int16_t attemptsLimit = 3; // кол-во попыток считывания данных с PMS7003
+int16_t currentAttempt = 0;
 
 void setup() 
 {
@@ -56,18 +56,16 @@ void loop()
   if (millis() - timing > 60000) 
   {
     currentAttempt = 0;
-    float* pmValuesArr = getPMValues();
+    int16_t* pmValuesArr = getPMValues();
     while(pmValuesArr[0] == -1 || currentAttempt <= attemptsLimit)
     {
       pmValuesArr = getPMValues();
       currentAttempt += 1;
     }
 
-    float* dhtValuesArr = getDHTValues();
-    int coValue = getCOValue();
-
-    float pressureValue = getPressureValue();
-
+    int16_t* dhtValuesArr = getDHTValues();
+    int16_t coValue = getCOValue();
+    int16_t pressureValue = getPressureValue();
     String gpsData = getGPSData();    
 
     String jsonToPost = GetJsonData(dhtValuesArr[1], dhtValuesArr[0], pmValuesArr[0], pmValuesArr[1], pmValuesArr[2], coValue, pressureValue, gpsData);
@@ -83,147 +81,91 @@ void loop()
   }
 }
 
-float* getPMValues()
+int16_t* getPMValues()
 {
-  try
+  int16_t* array = new int16_t[3];
+
+  if(!pms.read(data))
   {
-    if(!pms.read(data))
-    {
-      throw "No pms data";
-    }
-    
-    float pm_1 = data.PM_AE_UG_1_0;
-    float pm2_5 = data.PM_AE_UG_2_5;
-    float pm_10 = data.PM_AE_UG_10_0;
-
-    float* array = new float[3];
-
-    array[0] = pm_1;
-    array[1] = pm2_5;
-    array[2] = pm_10;
+    array[0] = -1;
+    array[1] = -1;
+    array[2] = -1;
 
     return array;
   }
-  catch (...)
+
+  array[0] = data.PM_AE_UG_1_0;
+  array[1] = data.PM_AE_UG_2_5;
+  array[2] = data.PM_AE_UG_10_0;
+
+  return array;
+}
+
+int16_t* getDHTValues()
+{
+  int16_t* array = new int16_t[2];
+
+  int16_t h = dht.readHumidity();
+  int16_t t = dht.readTemperature() * 10;
+
+  if (isnan(h) || isnan(t))
   {
-    float* array = new float[3];
+    array[0] = -1;
+    array[1] = -273; 
 
-      array[0] = -1;
-      array[1] = -1;
-      array[2] = -1;
-
-      return array;
+    return array;
   }
+
+  array[0] = h;
+
+  if(t > 0)
+    array[1] = t;
+  else
+    array[1] = (t + 3277) * -1; // из за кривой библиотеки приходится высчитывать отрицательные значения
+
+  return array;
 }
 
-float* getDHTValues()
+int16_t getCOValue()
 {
-    try
-    {
-      float h = dht.readHumidity();
-      float t = dht.readTemperature();
+  int16_t co = analogRead(ANALOG_MQ7_PIN);
 
-      if (isnan(h) || isnan(t))
-      {
-        throw "No DHT data";
-      }
+  if (co < 0 || co > 1023)
+  {
+    return -1;
+  }
 
-      float* array = new float[2];
-
-      array[0] = h;
-
-      if(t > 0)
-        array[1] = t;
-      else
-        array[1] = (t + 3276.6) * -1; // из за кривой библиотеки приходится высчитывать отрицательные значения
-
-      return array;
-    }
-    catch (...)
-    {
-      float* array = new float[2];
-
-      array[0] = -1;
-      array[1] = -273; 
-
-      return array;
-    }
+  return co;
 }
 
-int getCOValue()
+int16_t getPressureValue()
 {
-    try
-    {
-      int co = analogRead(analogMQ7);
+  int16_t pressure = bmp.readPressure();
 
-      if (co < 0 || co > 1023)
-      {
-        throw "No MQ-7 data";
-      }
+  if (pressure < 0)
+  {
+    return -1;
+  }
 
-      return co;
-    }
-    catch (...)
-    {
-      return -1;
-    }
-}
-
-float getPressureValue()
-{
-    try
-    {
-      float pressure = bmp.readPressure();
-
-      if (pressure < 0)
-      {
-        throw "No BMP180 data";
-      }
-
-      return pressure;
-    }
-    catch (...)
-    {
-      return -1;
-    }
+  return pressure;
 }
 
 String getGPSData()
 {
-    try
-    {
-      if (gpsSerial.available() > 0)
-      {
-        String data = "";
-        String gpsData = "";
-        String line = "";
+  if (gpsSerial.available() > 0)
+  {
+    String line = "";
 
-        while(!line.startsWith("$GPRMC")){
-          line = gpsSerial.readStringUntil('\n');
-        }
-
-        if(line.startsWith("$GPRMC")){
-          gpsData += line;
-
-          for(int i = 0; i <= 5; i++)
-          {
-            data = gpsSerial.readStringUntil('\n');
-
-            gpsData += data;
-          } 
-        }
-
-        return gpsData;
-      }
-      else
-      {
-        throw "No GPS data";
-      }
+    while(!line.startsWith(F("$GPGGA"))){
+      line = gpsSerial.readStringUntil('\n');
     }
-    catch (...)
-    {
-      return "Invalid";
-    }
+
+    return line;
+  }
+  else
+  {
+    return F("No GPS data");
+  }
 }
 
 
