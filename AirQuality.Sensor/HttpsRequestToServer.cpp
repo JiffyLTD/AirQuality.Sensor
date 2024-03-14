@@ -6,11 +6,11 @@ HTTPClient https;
 
 void SendData(String jsonToPost){
   std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
-  client->setFingerprint(fingerprint);
+  client->setInsecure();
 
   if(https.begin(*client, serverPath.c_str())){
     https.addHeader(F("Content-Type"), F("application/json"));
-    https.addHeader(F("Authorization"), token);
+    https.addHeader(F("API-Key"), token);
 
     https.POST(jsonToPost);        
             

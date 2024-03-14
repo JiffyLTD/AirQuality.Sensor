@@ -53,7 +53,7 @@ void setup()
 
 void loop() 
 {
-  if (millis() - timing > 60000) 
+  if (millis() - timing > 600000) 
   {
     currentAttempt = 0;
     int16_t* pmValuesArr = getPMValues();
@@ -65,7 +65,7 @@ void loop()
 
     int16_t* dhtValuesArr = getDHTValues();
     int16_t coValue = getCOValue();
-    int16_t pressureValue = getPressureValue();
+    int32_t pressureValue = getPressureValue();
     String gpsData = getGPSData();    
 
     String jsonToPost = GetJsonData(dhtValuesArr[1], dhtValuesArr[0], pmValuesArr[0], pmValuesArr[1], pmValuesArr[2], coValue, pressureValue, gpsData);
@@ -117,11 +117,7 @@ int16_t* getDHTValues()
   }
 
   array[0] = h;
-
-  if(t > 0)
-    array[1] = t;
-  else
-    array[1] = (t + 3277) * -1; // из за кривой библиотеки приходится высчитывать отрицательные значения
+  array[1] = t;
 
   return array;
 }
@@ -138,9 +134,9 @@ int16_t getCOValue()
   return co;
 }
 
-int16_t getPressureValue()
+int32_t getPressureValue()
 {
-  int16_t pressure = bmp.readPressure();
+  int32_t pressure = bmp.readPressure();
 
   if (pressure < 0)
   {
